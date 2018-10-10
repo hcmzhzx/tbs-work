@@ -40,7 +40,7 @@ const mutations = { //改变属性的状态 使用(commit)
          state.goodsRecommend.meta = payload.arr.meta.pagination;
       } else {
          // 商品价格排序
-         if (payload.price == 'desc') {
+         if (payload.type == 'desc') {
             for (let val of data) {
                state.goodsPriceDesc.arr.push(val);
             }

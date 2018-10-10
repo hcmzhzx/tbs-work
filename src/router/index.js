@@ -31,6 +31,7 @@ Vue.use(Router)
 
 export default new Router({
    routes: [
+      // default 系统默认主题
       {
          path: '/',
          name: 'index',
@@ -160,6 +161,7 @@ export default new Router({
          meta: {name: 'wcard'}
       },
       {path: '*', redirect: '/'}
+
    ],
    //mode: 'history',
    scrollBehavior(to, from, ition){

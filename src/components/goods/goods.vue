@@ -46,6 +46,7 @@
                <p class="flex center">¥{{item.price}}</p>
             </div>
             <div id="more" class="flex center" v-if="loading"><i></i><span>正在加载..</span></div>
+            <div id="more" class="flex center" v-if="allLoaded"><span>已加载完所有商品</span></div>
          </div>
          <!--热门-->
          <div class="br" id="goodslist" v-if="contact=='hot'"
@@ -61,6 +62,7 @@
                <p class="flex center">¥{{item.price}}</p>
             </div>
             <div id="more" class="flex center" v-if="loading"><i></i><span>正在加载..</span></div>
+            <div id="more" class="flex center" v-if="allLoaded"><span>已加载完所有商品</span></div>
          </div>
          <!--促销-->
          <div class="br" id="goodslist" v-if="contact=='promotion'"
@@ -76,9 +78,10 @@
                <p class="flex center">¥{{item.price}}</p>
             </div>
             <div id="more" class="flex center" v-if="loading"><i></i><span>正在加载..</span></div>
+            <div id="more" class="flex center" v-if="allLoaded"><span>已加载完所有商品</span></div>
          </div>
          <!--价格降序-->
-         <div class="br" id="goodslist" v-if="contact=='price' && !price"
+         <div class="br" id="goodslist" v-if="contact=='desc'"
               v-infinite-scroll='loadMore'
               infinite-scroll-disabled='loading'
               infinite-scroll-immediate-check="false"
@@ -91,9 +94,10 @@
                <p class="flex center">¥{{item.price}}</p>
             </div>
             <div id="more" class="flex center" v-if="loading"><i></i><span>正在加载..</span></div>
+            <div id="more" class="flex center" v-if="allLoaded"><span>已加载完所有商品</span></div>
          </div>
          <!--价格升序-->
-         <div class="br" id="goodslist" v-if="contact=='price' && price"
+         <div class="br" id="goodslist" v-if="contact=='asc'"
               v-infinite-scroll='loadMore'
               infinite-scroll-disabled='loading'
               infinite-scroll-immediate-check="false"
@@ -106,6 +110,7 @@
                <p class="flex center">¥{{item.price}}</p>
             </div>
             <div id="more" class="flex center" v-if="loading"><i></i><span>正在加载..</span></div>
+            <div id="more" class="flex center" v-if="allLoaded"><span>已加载完所有商品</span></div>
          </div>
       </div>
       <!--底部栏-->
@@ -142,50 +147,11 @@
       </div>
    </div>
 </template>
+
 <script>
    import {MessageBox } from 'mint-ui'
 
-   export default{
-      created(){
-         //获取用户列表
-         this.$store.dispatch('userInfo').then(users => {
-            this.user = users;
-            //console.log(users);
-
-            //判断用户是否上传二维码
-            if(users.qrcode){
-               this.show_wechat = false
-            }
-
-            // 判断会员时间戳
-            if(users.is_vip){
-               this.vip = true
-            }
-         });
-
-         let type = '' || this.$route.query.type;
-         if (type != '' && type != 0 && type != undefined) {
-            //获取商品列表
-            this.contact = 'all'
-            if (type == 1) {
-               this.contact = 'promotion'
-               this.$store.dispatch('goodsInfo', {URL: 'user/products/shop?type=1', type: this.contact})
-            } else if (type == 2) {
-               this.contact = 'hot'
-               this.$store.dispatch('goodsInfo', {URL: 'user/products/shop?type=2', type: this.contact})
-            } else if (type == 'desc') {
-               this.contact = 'price';
-               this.price = false
-               this.$store.dispatch('goodsInfo', {URL: `user/products/shop?sortby=price&order=desc`, type: this.contact, price:'desc'});
-            } else {
-               this.contact = 'price';
-               this.price = true
-               this.$store.dispatch('goodsInfo', {URL: `user/products/shop?sortby=price&order=asc`, type: this.contact, price:'asc'});
-            }
-         } else {
-            this.$store.dispatch('goodsInfo', {URL: 'user/products/shop', type: this.contact})
-         }
-      },
+   export default {
       data(){
          return {
             user: {},  //用户信息
@@ -202,7 +168,47 @@
             price: null,
 
             loading: false,
+            allLoaded: false,
             meta: {}
+         }
+      },
+      created(){
+         //获取用户列表
+         this.$store.dispatch('userInfo').then(users => {
+            this.user = users;
+            //console.log(users);
+
+            //判断用户是否上传二维码
+            if(users.qrcode){
+               this.show_wechat = false
+            }
+
+            // 判断会员时间戳
+            if(users.is_vip){
+               this.vip = true
+            }
+         });
+         let type = '' || this.$route.query.type;
+         if (type != '' && type != 0 && type != undefined) {
+            //获取商品列表
+            this.contact = 'all'
+            if (type == 1) {
+               this.contact = 'promotion'
+               this.$store.dispatch('goodsInfo', {URL: 'user/products/shop?type=1', type: this.contact})
+            } else if (type == 2) {
+               this.contact = 'hot'
+               this.$store.dispatch('goodsInfo', {URL: 'user/products/shop?type=2', type: this.contact})
+            } else if (type == 'desc') {  // 降序
+               this.contact = 'desc';
+               this.price = false
+               this.$store.dispatch('goodsInfo', {URL: `user/products/shop?sortby=price&order=desc`, type: this.contact, price:'desc'});
+            } else {  //升序
+               this.contact = 'asc';
+               this.price = true
+               this.$store.dispatch('goodsInfo', {URL: `user/products/shop?sortby=price&order=asc`, type: this.contact, price:'asc'});
+            }
+         } else {
+            this.$store.dispatch('goodsInfo', {URL: 'user/products/shop', type: this.contact})
          }
       },
       methods: {
@@ -212,13 +218,16 @@
             this.qrcode = true
          },
          tab(item){
+            this.allLoaded = false;
             // 判断点击类型
-            if (item == 'price') {
-               this.contact = item;
-               this.price = this.price === null ? false : !this.price;
+            if (item == 'price') { // 价格
                let order = this.price == false ? 'desc' : 'asc';
-               this.$store.dispatch('goodsInfo', {URL: `user/products/shop?sortby=price&order=${order}`, type: this.contact, price: order});
-               this.$router.push({query: {type: order}})
+               this.$router.push({query: {type: order}});
+               setTimeout(()=>{  // 给vue跳转时间(无特别需求)
+                  this.contact = this.$route.query.type;
+                  this.price = this.price === null ? false : !this.price;
+                  this.$store.dispatch('goodsInfo', {URL: `user/products/shop?sortby=price&order=${order}`, type: this.contact, price: order});
+               },100)
             } else {
                this.price = null
                this.contact = item;
@@ -235,9 +244,12 @@
             }
          },
          loadMore(){  //加载更多
+            if(this.loading) return;
             this.loading = true;
+            this.allLoaded = false;
             if (this.meta.total_pages == this.meta.current_page) { //超过分页
                this.loading = false;
+               this.allLoaded = true;
                return false;
             } else {
                setTimeout(() => {
@@ -280,11 +292,12 @@
             this.meta = this.$store.getters.goodsRecommend.meta;
             return this.$store.getters.goodsRecommend.arr;
          },
-         //商品价格排序
+         //商品价格降序
          goodsPriceDesc(){
             this.meta = this.$store.getters.goodsPriceDesc.meta;
             return this.$store.getters.goodsPriceDesc.arr;
          },
+         //商品价格升序
          goodsPriceAsc(){
             this.meta = this.$store.getters.goodsPriceAsc.meta;
             return this.$store.getters.goodsPriceAsc.arr;
